@@ -10,3 +10,5 @@
 #include <unistd.h>
 
 int establish_irc_session(int argc, char** argv);
+int read_remote();
+int terminate_irc_session();

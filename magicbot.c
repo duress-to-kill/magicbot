@@ -1,11 +1,54 @@
 // User-defined header files begin here
 #include "magicbot.h"
 
+
+// Globals
 int sock;
 
-int main(int argc, char** argv){
-    establish_irc_session(argc, argv);
+
+// Begin main function
+int main(int argc, char** argv) {
+  establish_irc_session(argc, argv);
+  read_remote();
+  terminate_irc_session();
 }
+
+
+int read_remote() {
+  // write(connection, message, strlen(message));   // Save this til read works.
+
+  // Prepare some values we'll need to do a robust sequential read from the remote.
+  size_t buffer_length = 100;
+  char buffer[ buffer_length + 1 ];
+  size_t read_index = 0;
+  ssize_t read_size = 0;
+  //
+  while( ( read_size = read( sock, buffer + read_index, buffer_length - read_index ) ) != 0 ) {
+    // The complex test on the above line calls read() for an amount of data not exceeding
+    // the remaining amount of space in the buffer, until either the buffer is full, or the
+    // remote stops sending.
+    if( read_size == -1 ) {
+      fprintf( stderr, "A read error occured\n" );
+      exit(1);
+    }
+    read_index += read_size;
+    buffer[read_index] = '\0';
+  }
+
+  // Display what we read from the remote host.
+  fprintf( stdout, "The remote server transmitted \"%s\"\n", buffer );
+
+  return read_index - 1;
+}
+
+
+int terminate_irc_session() {
+  // Clean up and go home.
+  close(sock);
+  printf("Goodbye!\n");
+  return 0;
+}
+
 
 int establish_irc_session(int argc, char** argv) {
   // Create a temp to catch return codes from various functions.
@@ -13,20 +56,19 @@ int establish_irc_session(int argc, char** argv) {
 
   // Define various default values if they're not passed in on the command line.
   char* desired_address = malloc(16);
-  int desired_port = 8080;
-  char* message = "Hello world\n";
+  int desired_port = 6667;
   // Set the remote address to use.
   if( argc > 1 )
     strncpy(desired_address, argv[1], 15 );
   else {
-    fprintf( stdout, "No remote address specified, defaulting to localhost\n" );
-    strcpy(desired_address, "127.0.0.1");
+    fprintf( stdout, "No remote address specified, defaulting to iss.cat.pdx.edu\n" );
+    strcpy(desired_address, "131.252.208.87");
   }
   // Set the remote port to use, if specified.
   if( argc > 2 )
     desired_port = atoi(argv[2]);
   else
-    fprintf( stdout, "No remote port specified, defaulting to 8080\n" );
+    fprintf( stdout, "No remote port specified, defaulting to 6667\n" );
 
   // Request a file descriptor from the OS upon which we will build our connection.
   sock = socket(AF_INET, SOCK_STREAM, 0);   
@@ -68,32 +110,4 @@ int establish_irc_session(int argc, char** argv) {
   else {
     fprintf( stdout, "Successfully connected to remote: %s\n", inet_ntoa(server_address.sin_addr) );
   }
-
-  // write(connection, message, strlen(message));   // Save this til read works.
-
-  // Prepare some values we'll need to do a robust sequential read from the remote.
-  size_t buffer_length = 100;
-  char buffer[ buffer_length + 1 ];
-  size_t read_index = 0;
-  ssize_t read_size = 0;
-  //
-  while( ( read_size = read( sock, buffer + read_index, buffer_length - read_index ) ) != 0 ) {
-    // The complex test on the above line calls read() for an amount of data not exceeding
-    // the remaining amount of space in the buffer, until either the buffer is full, or the
-    // remote stops sending.
-    if( read_size == -1 ) {
-      fprintf( stderr, "A read error occured\n" );
-      exit(1);
-    }
-    read_index += read_size;
-    buffer[read_index] = '\0';
-  }
-
-  // Display what we read from the remote host.
-  fprintf( stdout, "The remote server transmitted \"%s\"\n", buffer );
-
-  // Clean up and go home.
-  close(sock);
-  printf("Goodbye!\n");
-  return 0;
 }
