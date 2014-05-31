@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
 }
 
 
-int read_remote() {
+char* read_remote() {
   // write(connection, message, strlen(message));   // Save this til read works.
 
   // Prepare some values we'll need to do a robust sequential read from the remote.
@@ -22,7 +22,9 @@ int read_remote() {
   char buffer[ buffer_length + 1 ];
   size_t read_index = 0;
   ssize_t read_size = 0;
-  //
+
+  // DEV: Read the maximum line size of an IRC message at one time until we find one that
+  // matches the bot trigger string (!card or other). Strip out garbage and return instruction.
   while( ( read_size = read( sock, buffer + read_index, buffer_length - read_index ) ) != 0 ) {
     // The complex test on the above line calls read() for an amount of data not exceeding
     // the remaining amount of space in the buffer, until either the buffer is full, or the
@@ -42,15 +44,21 @@ int read_remote() {
 }
 
 
-int terminate_irc_session() {
-  // Clean up and go home.
-  close(sock);
-  printf("Goodbye!\n");
-  return 0;
+int write_remote(char* message) {
+  // DEV: write not more than maximum IRC line size to remote host. Then sleep to maintain
+  // flood control before returning.
 }
 
 
-int establish_irc_session(int argc, char** argv) {
+void terminate_irc_session() {
+  // Clean up and go home.
+  close(sock);
+  printf("Goodbye!\n");
+  return;
+}
+
+
+void establish_irc_session(int argc, char** argv) {
   // Create a temp to catch return codes from various functions.
   int status;
 
@@ -110,4 +118,6 @@ int establish_irc_session(int argc, char** argv) {
   else {
     fprintf( stdout, "Successfully connected to remote: %s\n", inet_ntoa(server_address.sin_addr) );
   }
+
+  return;
 }

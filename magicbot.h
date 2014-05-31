@@ -9,6 +9,15 @@
 #include <string.h>
 #include <unistd.h>
 
-int establish_irc_session(int argc, char** argv);
-int read_remote();
-int terminate_irc_session();
+// IRC I/O functionality
+void establish_irc_session(int argc, char** argv);
+char* read_remote();
+int write_remote(char* message);
+void terminate_irc_session();
+
+// Json fetching functionality
+
+// Command parsing functionality
+
+// Database manipulation functionality
+
