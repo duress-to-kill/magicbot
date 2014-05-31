@@ -1,7 +1,7 @@
-all: client
+all: oracle
 
-client:
-	gcc -g client.c -o client
+oracle:
+	gcc -g magicbot.c -o oracle
 
 clean:
 	rm client

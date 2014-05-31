@@ -1,5 +1,7 @@
 .nfs*
-client
+oracle
 *.gch
 *.a
 *.o
+*.swo
+*.swp
