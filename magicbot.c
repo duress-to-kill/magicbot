@@ -1,14 +1,13 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <errno.h>
-#include <arpa/inet.h>
-#include <string.h>
-#include <unistd.h>
+// User-defined header files begin here
+#include "magicbot.h"
+
+int sock;
 
 int main(int argc, char** argv){
+    establish_irc_session(argc, argv);
+}
+
+int establish_irc_session(int argc, char** argv) {
   // Create a temp to catch return codes from various functions.
   int status;
 
@@ -30,7 +29,7 @@ int main(int argc, char** argv){
     fprintf( stdout, "No remote port specified, defaulting to 8080\n" );
 
   // Request a file descriptor from the OS upon which we will build our connection.
-  int sock = socket(AF_INET, SOCK_STREAM, 0);   
+  sock = socket(AF_INET, SOCK_STREAM, 0);   
   // Error check for a failed socket allocation.
   if(sock == -1){
     fprintf(stderr, "Failed to open socket\n");

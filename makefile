@@ -4,4 +4,4 @@ oracle:
 	gcc -g magicbot.c -o oracle
 
 clean:
-	rm client
+	rm oracle
