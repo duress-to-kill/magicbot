@@ -8,13 +8,12 @@ char* read_remote(int socket_fd) {
 
   // Prepare some values we'll need to do a robust sequential read from the remote.
   size_t buffer_length = 512;
-  char* buffer =  malloc( buffer_length + 1 );
+  char* buffer = malloc( buffer_length + 1 );
   *buffer = '\0';
   char* buffer_start;
   char* instructions = malloc( buffer_length + 1 );
-  //char* raw_read_start = NULL;
   size_t read_index = 0;
-  ssize_t read_size = 0;
+  //ssize_t read_size = 0;
   struct node* head = NULL;
   struct node* tail = NULL;
 
@@ -23,7 +22,6 @@ char* read_remote(int socket_fd) {
   do { 
     // Set the input marker at the end of any data remaining in the buffer after the last parsing run.
     buffer_start = buffer + strlen(buffer);
-    //raw_read_start = buffer;
 
     read_index = read( socket_fd, buffer_start, buffer_length - read_index );
     buffer_start[read_index] = '\0';
@@ -44,32 +42,17 @@ char* read_remote(int socket_fd) {
 
       //DEBUG
       fprintf( stdout, "Read: %s\n", tail->data );
+      free(tail->data);
+      free(tail);
+      tail = NULL;
+      //free(instructions);
       //DEBUG
       
-      buffer_start = strchrnul( buffer_start, '\n' );
+      buffer_start = (char*)( strchrnul( buffer_start, '\n' ) + 1 );
     }
     
-    memmove( buffer, buffer_start, strlen(buffer_start) );
+    memmove( buffer, buffer_start, strlen(buffer_start) + 1 );
   } while( strlen(buffer) > 0 );
-  /*
-  // DEV: Read the maximum line size of an IRC message at one time until we find one that
-  // matches the bot trigger string (!card or other). Strip out garbage and return instruction.
-  //while( ( read_size = read( socket_fd, buffer + read_index, buffer_length - read_index ) ) != 0 ) {
-  read_index == read( socket_fd, buffer, buffer_length );
-    // The complex test on the above line calls read() for an amount of data not exceeding
-    // the remaining amount of space in the buffer, until either the buffer is full, or the
-    // remote stops sending.
-    if( read_size == -1 ) {
-      fprintf( stderr, "A read error occured\n" );
-      exit(1);
-    }
-    //read_index += read_size;
-    buffer[read_index] = '\0';
-  //}
-  */
-
-  // Display what we read from the remote host.
-  //fprintf( stdout, "The remote server transmitted \"%s\"\n", buffer );
 
   free(buffer);
   //return instructions;
@@ -79,39 +62,28 @@ char* read_remote(int socket_fd) {
 
 int strspan(char* span_start, char span_terminator ) {
   char* span_end = strchr( span_start, span_terminator );
-  return ( (uintptr_t)span_end - (uintptr_t)span_start );
+  int span = (uintptr_t)span_end - (uintptr_t)span_start;
+  return span;
 }
 
 
-int write_remote( int socket_fd, char* message ) {
+int write_remote( int socket_fd, char* message, size_t message_length ) {
   // DEV: write not more than maximum IRC line size to remote host. Then sleep to maintain
   // flood control before returning.
   // EDIT: Allow writing of arbitrary amounts of text, in line-size chunks, with rate-limiting.
   // Leave buffer size-limiting to client function.
+  //while( strlen(message) > 0 ) {
+      write( socket_fd, message, message_length );
+      write( socket_fd, '\n', 1);
+  //}
+
+  return 0;
 }
 
 
 int establish_irc_session( char* ip_addr, int port ) {
   // Create a temp to catch return codes from various functions.
   int status;
-
-  /*
-  // Define various default values if they're not passed in on the command line.
-  char* desired_address = malloc(16);
-  int desired_port = 6667;
-  // Set the remote address to use.
-  if( argc > 1 )
-    strncpy(desired_address, argv[1], 15 );
-  else {
-    fprintf( stdout, "No remote address specified, defaulting to iss.cat.pdx.edu\n" );
-    strcpy(desired_address, "131.252.208.87");
-  }
-  // Set the remote port to use, if specified.
-  if( argc > 2 )
-    desired_port = atoi(argv[2]);
-  else
-    fprintf( stdout, "No remote port specified, defaulting to 6667\n" );
-  */
 
   // Request a file descriptor from the OS upon which we will build our connection.
   int socket_fd = socket(AF_INET, SOCK_STREAM, 0);   
@@ -153,6 +125,9 @@ int establish_irc_session( char* ip_addr, int port ) {
   else {
     fprintf( stdout, "Successfully connected to remote: %s\n", inet_ntoa(server_address.sin_addr) );
   }
+
+  write_remote( socket_fd, "USER oraclebot oraclebot oraclebot :oraclebot\n", 46 );
+  write_remote( socket_fd, "NICK oraclebotv2\n", 17 );
 
   return socket_fd;
 }

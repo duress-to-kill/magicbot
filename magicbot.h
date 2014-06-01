@@ -21,7 +21,7 @@ struct params {
 
 // IRC I/O functionality
 char* read_remote(int socket_fd);
-int write_remote(int socket_fd, char* message);
+int write_remote(int socket_fd, char* message, size_t message_length );
 int establish_irc_session( char* ip_addr, int port );
 void terminate_irc_session(int socket_fd);
 

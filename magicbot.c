@@ -6,7 +6,7 @@ int main( int argc, char** argv ) {
   struct params* modes = get_modes( argc, argv );
 
   int socket_fd = establish_irc_session( modes->ip_addr, modes->port );
-  //while (1)
+  while (1)
     read_remote(socket_fd);
   terminate_irc_session(socket_fd);
 
