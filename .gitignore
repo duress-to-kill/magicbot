@@ -5,3 +5,4 @@ oracle
 *.o
 *.swo
 *.swp
+a.out

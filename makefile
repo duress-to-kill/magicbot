@@ -5,3 +5,6 @@ oracle:
 
 clean:
 	rm oracle
+
+server:
+	echo 'Run: nc -klv localhost 6667; ./oracle localhost 6667'

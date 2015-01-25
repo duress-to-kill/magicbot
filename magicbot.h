@@ -15,14 +15,17 @@
 // Command parsing functionality
 struct params* get_modes( int argc, char** argv );
 struct params {
-    char* ip_addr;
-    int port;
+  char* ip_addr;
+  int port;
+  int socket_fd;
+  char* botname;
+  FILE* socket_file;
 };
 
 // IRC I/O functionality
-char* read_remote(int socket_fd);
+char* read_remote(FILE* stream);
 int write_remote(int socket_fd, char* message, size_t message_length );
-int establish_irc_session( char* ip_addr, int port );
+//int establish_irc_session( struct params* modes );
 void terminate_irc_session(int socket_fd);
 
 // Json fetching functionality
