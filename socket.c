@@ -81,12 +81,6 @@ char* read_remote(FILE* stream) {
   return NULL;
 }
 
-int strspan(char* span_start, char span_terminator ) {
-  char* span_end = strchr( span_start, span_terminator );
-  int span = (uintptr_t)span_end - (uintptr_t)span_start;
-  return span;
-}
-
 
 int write_remote( int socket_fd, char* message, size_t message_length ) {
   // DEV: write not more than maximum IRC line size to remote host. Then sleep to maintain
