@@ -1,8 +1,8 @@
 .nfs*
 oracle
 *.gch
-*.a
 *.o
 *.swo
 *.swp
 a.out
+*.json
