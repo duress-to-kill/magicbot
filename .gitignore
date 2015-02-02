@@ -1,5 +1,6 @@
 .nfs*
 oracle
+json_manager
 *.gch
 *.o
 *.swo
