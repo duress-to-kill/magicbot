@@ -11,15 +11,9 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <unistd.h>
+#include "socket.h"
 
 // Command parsing functionality
-typedef struct {
-  char* ip_addr;
-  int port;
-  int socket_fd;
-  char* botname;
-  FILE* socket_file;
-} params;
 params* get_modes( int argc, char** argv );
 
 // IRC I/O functionality

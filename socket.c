@@ -1,6 +1,5 @@
 // User-defined header files begin here
 #include "magicbot.h"
-#include "socket.h"
 
 
 /* this function is borked

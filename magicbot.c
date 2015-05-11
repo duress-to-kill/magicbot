@@ -89,12 +89,19 @@ char** parse(char* raw) {
   start = strtok(buffer, delim);
   strncpy(tokv[i], start, tokenlen);
   i++;
-  delim = ",";
+  strcpy(delim,",");
   while(i < tokencount && (start = strtok(NULL, delim)) != NULL) {
     strncpy(tokv[i], start, tokenlen);
     i++;
   }
-  retv = malloc();
+
+  retv = malloc(sizeof(char*) * i);
+  while(i > 0) {
+    i--;
+    retv[i] = malloc(strlen(tokv[i]) + 1);
+    strncpy(retv[i], tokv[i], tokenlen);
+    retv[i][strlen(tokv[i])] = '\0';
+  }
   // ********************* BOOKMARK ************************* //
 
   return retv;

@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include "jsmn.h"
 #include "json_manager.h"
+#include "magicbot.h"
 /* TESTING ZONE */
 
 static card *table[tablesize];

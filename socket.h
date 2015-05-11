@@ -1,4 +1,12 @@
 typedef struct {
+  char* ip_addr;
+  int port;
+  int socket_fd;
+  char* botname;
+  FILE* socket_file;
+} params;
+
+typedef struct {
   char* data;
   struct node* next;
 } node;
