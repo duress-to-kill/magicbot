@@ -3,7 +3,7 @@
 
 // Begin main function
 int main(int argc, char** argv) {
-  struct params* modes = get_modes( argc, argv );
+  params* modes = get_modes( argc, argv );
 
   establish_irc_session(modes);
   char* line;
@@ -23,8 +23,8 @@ int main(int argc, char** argv) {
 }
 
 // Begin parsing operational modes from input parameters
-struct params* get_modes(int argc, char** argv) {
-  struct params* modes = malloc(sizeof(struct params));
+params* get_modes(int argc, char** argv) {
+  params* modes = malloc(sizeof(params));
 
   // Define various default values if they're not passed in on the command line.
   modes->ip_addr = malloc(16);
@@ -49,19 +49,55 @@ struct params* get_modes(int argc, char** argv) {
 }
 
 char** parse(char* raw) {
+  // Syntax spec: requests take form of one of:
+  // !card(name)
+  // !card(name:field1,field2,field3)
+  // other search terms may be implemented later, with form !foo()
+  // the most likely implementation to follow will be !grep(token), which should return
+  //   a list of cardnames that match a substring match for "token"
   char* start;
   int span;
-  if((start = strchr(raw, '!')) == NULL || ((span = strspan(start, '(')) == -1))
-    return NULL;
+  const int bufferlen = 300;
+  const int tokenlen = 100;
+  const int tokencount = 10;
 
-  char bufferv[10][100];
-  char buffer[100];
+  // Check to ensure that all necessary syntax tokens are found in the raw input
+  if((start = strchr(raw, '!')) == NULL         // check for !
+      || (start = strchr(start, '(')) == NULL   // check for subsequent (
+      || (span = strspan(start, ')')) == -1)  // check for ) following initial (
+    return NULL;
+  start++;     // If syntax checking passed, move the parsing bounds in by 1, so
+  span -= 2;   //   start and end position are both inside the enclosing parens
+
+  char** retv = NULL;
+  char tokv[tokencount][tokenlen + 1];
+  char buffer[bufferlen];
+  char delim[2] = ":";
   int i = 0;
 
-  strncpy(buffer, start, span - 1);
+  strncpy(buffer, start, span);
+  /*
   if(strcmp(buffer, "card") == 0) {
-    ***bookmark***
+    // ***bookmark***
+    start = start[span + 1];
+    if((span = strspan(start, ')') == -1)
+      return NULL;
+    strncpy(buffer, start, span - 1);
+    if((
   } // else if(strcmp( other keywords ) == 0)
+  */
+  start = strtok(buffer, delim);
+  strncpy(tokv[i], start, tokenlen);
+  i++;
+  delim = ",";
+  while(i < tokencount && (start = strtok(NULL, delim)) != NULL) {
+    strncpy(tokv[i], start, tokenlen);
+    i++;
+  }
+  retv = malloc();
+  // ********************* BOOKMARK ************************* //
+
+  return retv;
 }
 
 void process_queries(char** tokv) {

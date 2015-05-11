@@ -10,7 +10,7 @@ char* read_remote(int socket_fd) {
   // Prepare some values we'll need to do a robust sequential read from the remote.
   size_t buffer_length = 512;
   char* buffer = malloc(buffer_length + 1);
-  //*buffer = '\0';
+  // *buffer = '\0';
   memset(buffer, '\0', buffer_length + 1);
   char* buffer_start;
   //char* instructions = malloc( buffer_length + 1 );
@@ -19,7 +19,7 @@ char* read_remote(int socket_fd) {
   struct node* head = NULL;
   struct node* tail = NULL;
 
-  //*instructions = '\0';
+  // *instructions = '\0';
 
   do { 
     // Set the input marker at the end of any data remaining in the buffer after the last parsing run.
@@ -90,7 +90,7 @@ int write_remote( int socket_fd, char* message, size_t message_length ) {
   //while( strlen(message) > 0 ) {
     printf("Write: %s\n", message);
     write(socket_fd, message, message_length);
-    write(socket_fd, '\n', 1);
+    write(socket_fd, "\n", 1);
   //}
 
   return 0;
@@ -99,7 +99,7 @@ int write_remote( int socket_fd, char* message, size_t message_length ) {
 
 // A management function called form main() that handles building a network connection, identifying to
 // nickserv, and all other connection-related functionality.
-void establish_irc_session( struct params* modes ) {
+void establish_irc_session( params* modes ) {
   // Open a network socket and reord the coresponding file descriptor.
   modes->socket_fd = build_connection( modes->ip_addr, modes->port );
   modes->socket_file = fdopen(modes->socket_fd, "w+");

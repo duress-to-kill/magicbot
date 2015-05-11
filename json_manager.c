@@ -2,9 +2,12 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <ctype.h>
 #include "jsmn.h"
 #include "json_manager.h"
 /* TESTING ZONE */
+
+static card *table[tablesize];
 
 static char *raw = NULL;
 static int rawlen = 0;
@@ -75,12 +78,12 @@ static unsigned int hash(const char *key, int len)
   // The apparently well-known ELF hash
   // cut and paste courtesy of http://www.eternallyconfuzzled.com/tuts/algorithms/jsw_tut_hashing.aspx
 
-  unsigned char *p = key;
+  //unsigned char *p = key;
   unsigned h = 0, g;
   int i;
 
   for ( i = 0; i < len; i++ ) {
-    h = ( h << 4 ) + p[i];
+    h = ( h << 4 ) + key[i];
     g = h & 0xf0000000L;
 
     if ( g != 0 )
@@ -93,6 +96,8 @@ static unsigned int hash(const char *key, int len)
 }
 
 static int insert_card(const jsmntok_t *card_obj) {
+  int i = 0;
+
   if (card_obj == NULL) {
     fprintf(stderr, "Error: Tried to insert a null card into hash table\n");
     return 1;
@@ -106,16 +111,25 @@ static int insert_card(const jsmntok_t *card_obj) {
   start += 8;
   char buffer[50];
   strncpy(buffer, start, 49);
-  char *end = strchr(buffer, '\"');
-  if (end == NULL) {
+  int len = strspan(buffer, '\"');
+  if (len < 1) {
     fprintf(stderr, "Error: found malformed card object at byte offset %ld during indexing\n", (long)card_obj - (long)tok);
   }
-  *end = '\0';
+  start[len] = '\0';
 
+  char name[len + 1];
+  strncpy(name, start, len + 1);
+
+  for(i = 0; i <= len; i++) {
+    name[i] = tolower(name[i]);
+  }
+
+  card* current = table[hash(name, strlen(name)) % tablesize];
   // TESTING
+
   printf("Would insert card \"%s\", found at byte offset %ld\n", buffer, (long)start - (long)tok);
 
-return 0;
+  return 0;
 }
 
 static int update_table() {
@@ -125,6 +139,21 @@ static int update_table() {
   return 0;
 }
 
+void init_table() {
+  int i;
+  card *current, *prev;;
+  for (i = 0; i < tablesize; i++) {
+    if (table[i] != NULL) {
+      current = table[i];
+      while(current != NULL) {
+        prev = current;
+        free(prev);
+      }
+      table[i] = NULL;
+    }
+  }
+}
+
 /* TEST FRAMEWORK BELOW THIS POINT */
 
 void cleanup() {
@@ -132,6 +161,7 @@ void cleanup() {
   free(tok);
 }
 
+/*
 int main(int argc, char* argv[]) {
   load_cards_from_file(argv[1]);
 
@@ -139,3 +169,4 @@ int main(int argc, char* argv[]) {
   cleanup();
   return 0;
 }
+*/

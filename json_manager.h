@@ -1,3 +1,5 @@
+#define tablesize 5000
+
 // A hash table node for indexing card objects in parsed json data
 //typedef struct card Card;
 
