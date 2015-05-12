@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
     tokv = parse(line);
     free(line);
     if (tokv != NULL) {
-      process_queries(tokv);
+      process_queries(modes, tokv);
     //free tokv
     }
   }
@@ -56,63 +56,104 @@ char** parse(char* raw) {
   // the most likely implementation to follow will be !grep(token), which should return
   //   a list of cardnames that match a substring match for "token"
   char* start;
+  char* arg_start;
   int span;
-  const int bufferlen = 300;
+  const int bufferlen = 500;
   const int tokenlen = 100;
-  const int tokencount = 10;
+  const int tokencount = 12;
 
   // Check to ensure that all necessary syntax tokens are found in the raw input
-  if((start = strchr(raw, '!')) == NULL         // check for !
-      || (start = strchr(start, '(')) == NULL   // check for subsequent (
-      || (span = strspan(start, ')')) == -1)  // check for ) following initial (
+  if((start = strstr(raw, "PRIVMSG")) == NULL         // check for !
+      || (start = strchr(start, '!')) == NULL         // check for !
+      || (arg_start = strchr(start, '(')) == NULL   // check for subsequent (
+      || (span = strspan(arg_start, ')')) == -1)  // check for ) following initial (
     return NULL;
-  start++;     // If syntax checking passed, move the parsing bounds in by 1, so
-  span -= 2;   //   start and end position are both inside the enclosing parens
+  arg_start++;     // If syntax checking passed, move the parsing bounds in by 1, so
+  //span --;   //   start and end position are both inside the enclosing parens
 
-  char** retv = NULL;
-  char tokv[tokencount][tokenlen + 1];
+  char** retv = malloc(sizeof(char*) * (tokencount + 1));
+  memset(retv, 0, sizeof(char*) * (tokencount + 1));
+  //char tokv[tokencount][tokenlen];
+  char tokbuffer[tokenlen + 1];
   char buffer[bufferlen];
   char delim[2] = ":";
-  int i = 0;
 
-  strncpy(buffer, start, span);
-  /*
-  if(strcmp(buffer, "card") == 0) {
-    // ***bookmark***
-    start = start[span + 1];
-    if((span = strspan(start, ')') == -1)
-      return NULL;
-    strncpy(buffer, start, span - 1);
-    if((
-  } // else if(strcmp( other keywords ) == 0)
-  */
-  start = strtok(buffer, delim);
-  strncpy(tokv[i], start, tokenlen);
-  i++;
-  strcpy(delim,",");
-  while(i < tokencount && (start = strtok(NULL, delim)) != NULL) {
-    strncpy(tokv[i], start, tokenlen);
-    i++;
-  }
+  // Capture command name
+  retv[0] = malloc(sizeof(char) * strspan(start, '('));
+  strncpy(retv[0], start + 1, strspan(start, '('));
+  *strchr(retv[0], '(') = '\0';
 
-  retv = malloc(sizeof(char*) * i);
-  while(i > 0) {
-    i--;
-    retv[i] = malloc(strlen(tokv[i]) + 1);
-    strncpy(retv[i], tokv[i], tokenlen);
-    retv[i][strlen(tokv[i])] = '\0';
+  // If the parameter list has a length greater than 0, capture the first word as the parameter
+  if(span > 1) {
+    int i = 1;
+    strncpy(buffer, arg_start, span);
+    /*
+    if(strcmp(buffer, "card") == 0) {
+      // ***bookmark***
+      start = start[span + 1];
+      if((span = strspan(start, ')') == -1)
+        return NULL;
+      strncpy(buffer, start, span - 1);
+      if((
+    } // else if(strcmp( other keywords ) == 0)
+    */
+    arg_start = strtok(buffer, delim);
+    strncpy(tokbuffer, arg_start, tokenlen - 1);
+    retv[i] = malloc(sizeof(char) * strlen(tokbuffer) + 1);
+    strcpy(retv[i], tokbuffer);
+    if((start = strchr(retv[i], ')')) != NULL)
+    {
+      *start = '\0';
+    }
+    else
+    {
+      // Then capture any subparameters until the end of the parameter list is reached
+      i++;
+      strcpy(delim,",");
+      while(i < tokencount && (arg_start = strtok(NULL, delim)) != NULL) {
+        strncpy(tokbuffer, arg_start, tokenlen);
+        tokbuffer[tokenlen] = '\0';
+        retv[i] = malloc(strlen(tokbuffer) + 1);
+        strcpy(retv[i], tokbuffer);
+        if((start = strchr(retv[i], ')')) != NULL)
+        {
+          *start = '\0';
+        }
+        i++;
+      }
+    }
+    /*
+    while(i > 1) {
+      i--;
+      retv[i] = malloc(strlen(tokv[i]) + 1);
+      strncpy(retv[i], tokv[i], tokenlen);
+      retv[i][strlen(tokv[i])] = '\0';
+    }
+    */
   }
-  // ********************* BOOKMARK ************************* //
 
   return retv;
 }
 
-void process_queries(char** tokv) {
-  
+void process_queries(params* modes, char** tokv) {
+  // BEGIN DEBUG
+  char* output = malloc(512);
+  int len = 0;
+  int i;
+
+  len = snprintf(output, 510, "PRIVMSG #mtg_test :Read command \'%s\', with the following parameter and subparameters:", tokv[0]);
+  for(i = 1; len < 510 && tokv[i] != NULL; i++) {
+    len += snprintf(&output[len], 510 - len, " %s", tokv[i]);
+  }
+  len += sprintf(&output[len], "\n");
+  write_remote(modes->socket_fd, output, len);
+  free(output);
+  return;
+  // END DEBUG
 }
 
-int strspan(char* span_start, char span_terminator ) {
-  char* span_end = strchr( span_start, span_terminator );
+int strspan(char* span_start, char span_terminator) {
+  char* span_end = strchr(span_start, span_terminator);
   if(span_end == NULL)
     return -1;
   int span = (uintptr_t)span_end - (uintptr_t)span_start;

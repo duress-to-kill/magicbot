@@ -22,7 +22,7 @@ int write_remote(int socket_fd, char* message, size_t message_length );
 void terminate_irc_session(int socket_fd);
 int strspan(char* span_start, char span_terminator );
 char** parse(char* raw);
-void process_queries(char** tokv);
+void process_queries(params* modes, char** tokv);
 
 // Json fetching functionality
 

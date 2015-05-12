@@ -108,7 +108,7 @@ void establish_irc_session( params* modes ) {
   write_remote(modes->socket_fd, message, strlen(message));
   sprintf(message, "NICK %s\n", modes->botname);
   write_remote(modes->socket_fd, message, strlen(message));
-  sprintf(message, "JOIN #mtg\n");
+  sprintf(message, "JOIN #mtg_test\n");
   write_remote(modes->socket_fd, message, strlen(message));
 
 }
@@ -161,12 +161,12 @@ int build_connection( char* ip_addr, int port ) {
 
 
 //* TESTING
-  write_remote(socket_fd, "USER oraclebot oraclebot oraclebot :oraclebot\n", 46);
-  write_remote(socket_fd, "NICK oraclebotv2\n", 17);
+  //write_remote(socket_fd, "USER oraclebot oraclebot oraclebot :oraclebot\n", 46);
+  //write_remote(socket_fd, "NICK oraclebotv2\n", 17);
 //*/
-  printf("\nSubmitted server data...\n");
-  write_remote(socket_fd, "JOIN #mtg\n", 9);
-  printf("\nSubmitted channel data...\n");
+  //printf("\nSubmitted server data...\n");
+  //write_remote(socket_fd, "JOIN #mtg\n", 9);
+  //printf("\nSubmitted channel data...\n");
   return socket_fd;
 }
 
