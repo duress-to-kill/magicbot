@@ -1,100 +1,156 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <errno.h>
-#include <arpa/inet.h>
-#include <string.h>
-#include <unistd.h>
+// User-defined header files begin here
+#include "magicbot.h"
 
-int main(int argc, char** argv){
-  // Create a temp to catch return codes from various functions.
-  int status;
+// Begin main function
+int main(int argc, char** argv) {
+  params* modes = get_modes( argc, argv );
+
+  establish_irc_session(modes);
+  char* line;
+  char** tokv;
+  while (1) {
+    line = read_remote(modes->socket_file);
+    tokv = parse(line);
+    free(line);
+    if (tokv != NULL) {
+      process_queries(modes, tokv);
+      int i;
+      for(i = 0; tokv[i] != NULL; i++) {
+        free(tokv[i]);
+      }
+      free(tokv);
+    }
+  }
+  terminate_irc_session(modes->socket_fd);
+
+  free(modes);
+}
+
+// Begin parsing operational modes from input parameters
+params* get_modes(int argc, char** argv) {
+  params* modes = malloc(sizeof(params));
 
   // Define various default values if they're not passed in on the command line.
-  char* desired_address = malloc(16);
-  int desired_port = 8080;
-  char* message = "Hello world\n";
+  modes->ip_addr = malloc(16);
+  modes->port = 6667;
+  modes->botname = malloc(9);
+  strncpy(modes->botname, "oraclev2", 8);
+
   // Set the remote address to use.
   if( argc > 1 )
-    strncpy(desired_address, argv[1], 15 );
+    strncpy(modes->ip_addr, argv[1], 15);
   else {
-    fprintf( stdout, "No remote address specified, defaulting to localhost\n" );
-    strcpy(desired_address, "127.0.0.1");
+    fprintf(stdout, "No remote address specified, defaulting to iss.cat.pdx.edu\n");
+    strcpy(modes->ip_addr, "131.252.208.87");
   }
   // Set the remote port to use, if specified.
-  if( argc > 2 )
-    desired_port = atoi(argv[2]);
+  if(argc > 2)
+    modes->port = atoi(argv[2]);
   else
-    fprintf( stdout, "No remote port specified, defaulting to 8080\n" );
+    fprintf(stdout, "No remote port specified, defaulting to 6667\n");
 
-  // Request a file descriptor from the OS upon which we will build our connection.
-  int sock = socket(AF_INET, SOCK_STREAM, 0);   
-  // Error check for a failed socket allocation.
-  if(sock == -1){
-    fprintf(stderr, "Failed to open socket\n");
-    fprintf( stderr, "ERRNO: %d, Error: %s\n", errno, strerror(errno) );
-    exit(1);
+  return modes;
+}
+
+char** parse(char* raw) {
+  // Syntax spec: requests take form of one of:
+  // !card(name)
+  // !card(name:field1,field2,field3)
+  // other search terms may be implemented later, with form !foo()
+  // the most likely implementation to follow will be !grep(token), which should return
+  //   a list of cardnames that match a substring match for "token"
+  if(raw == NULL) {
+    printf("Warning: Read null string from remote. Ignoring input.\n");
+    return NULL;
   }
 
-  // Prepare a struct that defines the remote server to connect to.
-  struct sockaddr_in server_address;
-  server_address.sin_family = AF_INET;
-  server_address.sin_port =  htons(desired_port);
-  // Translate the human-readable remote address to its binary equivalent.
-  status = inet_aton(desired_address, &server_address.sin_addr);
-  // Make sure the IP address was translated correctly - a failure at this stage may mean we got
-  // a bad address.
-  if(status == -1){
-    fprintf(stderr, "Failed to parse address: %s\nERRNO: %d, Error: %s\n", desired_address, errno, strerror(errno) );
-    exit(1);
+  char* start;
+  char* arg_start;
+  int span;
+  const int bufferlen = 500;
+  const int tokenlen = 100;
+  const int tokencount = 12;
+
+  // Catch server PINGs ane respond.
+  if((start = strstr(raw, ":PING ")) != NULL) {
+    start++;
+
+    char** retv = malloc(sizeof(char*) * 3);
+    retv[0] = strdup(start);
+    retv[0][4] = 'O';  // Make the PONG reply from the initial PING
+    retv[1] = retv[0] + 5;
+    return retv;
   }
 
-  // int bool_opt;
-  // socklen_t bool_opt_len = sizeof(bool_opt);
-  socklen_t bool_opt_len = 32;
-  // sizeof() returns a length in bytes. connect() expects a number that represents an int, but
-  // it expects it in bits. Hardcoding the above value may cause unexpected behavior with other
-  // socket types, but this shouldn't be relevant for ipv4 connections (32 bits by definition).
-  //
-  // Call connect() to negotiate a TCP handshake with the remote host, and capture its return code.
-  status = connect( sock, (struct sockaddr *) &server_address, bool_opt_len );
-  // Check the return code. On fail, report the error and exit.
-  if( status == -1 ){
-    fprintf( stderr, "Failed to connect to remote: %s\n", desired_address );
-    fprintf( stderr, "ERRNO: %d, Error: %s\n", errno, strerror(errno) );
-    exit(1);
-  }
-  else {
-    fprintf( stdout, "Successfully connected to remote: %s\n", inet_ntoa(server_address.sin_addr) );
-  }
+  // Check to ensure that all necessary syntax tokens are found in the raw input
+  if((start = strstr(raw, "PRIVMSG")) == NULL         // check for !
+      || (start = strchr(start, '!')) == NULL         // check for !
+      || (arg_start = strchr(start, '(')) == NULL   // check for subsequent (
+      || (span = strspan(arg_start, ')')) == -1)  // check for ) following initial (
+    return NULL;
+  arg_start++;  // Shift the start marker past the opening paren. The closing paren will be used to stop parsing, and will be stripped out later.
 
-  // write(connection, message, strlen(message));   // Save this til read works.
+  char** retv = malloc(sizeof(char*) * (tokencount + 1));
+  memset(retv, 0, sizeof(char*) * (tokencount + 1));
+  char tokbuffer[tokenlen + 1];
+  char buffer[bufferlen];
+  char delim[2] = ":";
 
-  // Prepare some values we'll need to do a robust sequential read from the remote.
-  size_t buffer_length = 100;
-  char buffer[ buffer_length + 1 ];
-  size_t read_index = 0;
-  ssize_t read_size = 0;
-  //
-  while( ( read_size = read( sock, buffer + read_index, buffer_length - read_index ) ) != 0 ) {
-    // The complex test on the above line calls read() for an amount of data not exceeding
-    // the remaining amount of space in the buffer, until either the buffer is full, or the
-    // remote stops sending.
-    if( read_size == -1 ) {
-      fprintf( stderr, "A read error occured\n" );
-      exit(1);
+  // Capture command name
+  retv[0] = malloc(sizeof(char) * strspan(start, '('));
+  strncpy(retv[0], start + 1, strspan(start, '('));
+  *strchr(retv[0], '(') = '\0';
+
+  // If the parameter list has a length greater than 0, capture the first word as the parameter
+  if(span > 1) {
+    int i = 1;
+    strncpy(buffer, arg_start, span);
+    arg_start = strtok(buffer, delim);
+    strncpy(tokbuffer, arg_start, tokenlen - 1);
+    retv[i] = malloc(sizeof(char) * strlen(tokbuffer) + 1);
+    strcpy(retv[i], tokbuffer);
+    if((start = strchr(retv[i], ')')) != NULL) {  // If the parameter string ends after the first token, stop parsing here.
+      *start = '\0';
+    } else {  // Otherwise, start capturing subparameters until the closing paren is found, or the limit of 10 is reached.
+      i++;
+      strcpy(delim,",");
+      while(i < tokencount && (arg_start = strtok(NULL, delim)) != NULL) {
+        strncpy(tokbuffer, arg_start, tokenlen);
+        tokbuffer[tokenlen] = '\0';
+        retv[i] = malloc(strlen(tokbuffer) + 1);
+        strcpy(retv[i], tokbuffer);
+        if((start = strchr(retv[i], ')')) != NULL) {
+          *start = '\0';
+        }
+        i++;
+      }
     }
-    read_index += read_size;
-    buffer[read_index] = '\0';
   }
 
-  // Display what we read from the remote host.
-  fprintf( stdout, "The remote server transmitted \"%s\"\n", buffer );
+  return retv;
+}
 
-  // Clean up and go home.
-  close(sock);
-  printf("Goodbye!\n");
-  return 0;
+void process_queries(params* modes, char** tokv) {
+  char* output = malloc(512);
+  int len = 0;
+  int i;
+
+  // BEGIN DEBUG
+  len = snprintf(output, 510, "PRIVMSG #mtg_test :Read command \'%s\', with the following parameter and subparameters:", tokv[0]);
+  for(i = 1; len < 510 && tokv[i] != NULL; i++) {
+    len += snprintf(&output[len], 510 - len, " %s", tokv[i]);
+  }
+  len += sprintf(&output[len], "\n");
+  write_remote(modes->socket_fd, output, len);
+  free(output);
+  return;
+  // END DEBUG
+}
+
+int strspan(char* span_start, char span_terminator) {
+  char* span_end = strchr(span_start, span_terminator);
+  if(span_end == NULL)
+    return -1;
+  int span = (uintptr_t)span_end - (uintptr_t)span_start;
+  return span;
 }

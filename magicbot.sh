@@ -7,7 +7,7 @@ mkfifo .botfile
 echo foo
 
 # initial channel to join here:
-CHAN=#oracle
+CHAN=#mtg
 
 tail -f .botfile | openssl s_client -connect irc.cat.pdx.edu:6697 | while true; do
     if [[ -z $STARTED ]]; then

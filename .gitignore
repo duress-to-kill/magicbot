@@ -1,5 +1,9 @@
 .nfs*
-client
+oracle
+json_manager
 *.gch
-*.a
 *.o
+*.swo
+*.swp
+a.out
+*.json
