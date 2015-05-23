@@ -14,7 +14,11 @@ int main(int argc, char** argv) {
     free(line);
     if (tokv != NULL) {
       process_queries(modes, tokv);
-    //free tokv
+      int i;
+      for(i = 0; tokv[i] != NULL; i++) {
+        free(tokv[i]);
+      }
+      free(tokv);
     }
   }
   terminate_irc_session(modes->socket_fd);
@@ -30,11 +34,11 @@ params* get_modes(int argc, char** argv) {
   modes->ip_addr = malloc(16);
   modes->port = 6667;
   modes->botname = malloc(9);
-  strncpy( modes->botname, "oraclev2", 8 );
+  strncpy(modes->botname, "oraclev2", 8);
 
   // Set the remote address to use.
   if( argc > 1 )
-    strncpy( modes->ip_addr, argv[1], 15 );
+    strncpy(modes->ip_addr, argv[1], 15);
   else {
     fprintf(stdout, "No remote address specified, defaulting to iss.cat.pdx.edu\n");
     strcpy(modes->ip_addr, "131.252.208.87");
@@ -55,6 +59,11 @@ char** parse(char* raw) {
   // other search terms may be implemented later, with form !foo()
   // the most likely implementation to follow will be !grep(token), which should return
   //   a list of cardnames that match a substring match for "token"
+  if(raw == NULL) {
+    printf("Warning: Read null string from remote. Ignoring input.\n");
+    return NULL;
+  }
+
   char* start;
   char* arg_start;
   int span;
@@ -62,18 +71,27 @@ char** parse(char* raw) {
   const int tokenlen = 100;
   const int tokencount = 12;
 
+  // Catch server PINGs ane respond.
+  if((start = strstr(raw, ":PING ")) != NULL) {
+    start++;
+
+    char** retv = malloc(sizeof(char*) * 3);
+    retv[0] = strdup(start);
+    retv[0][4] = 'O';  // Make the PONG reply from the initial PING
+    retv[1] = retv[0] + 5;
+    return retv;
+  }
+
   // Check to ensure that all necessary syntax tokens are found in the raw input
   if((start = strstr(raw, "PRIVMSG")) == NULL         // check for !
       || (start = strchr(start, '!')) == NULL         // check for !
       || (arg_start = strchr(start, '(')) == NULL   // check for subsequent (
       || (span = strspan(arg_start, ')')) == -1)  // check for ) following initial (
     return NULL;
-  arg_start++;     // If syntax checking passed, move the parsing bounds in by 1, so
-  //span --;   //   start and end position are both inside the enclosing parens
+  arg_start++;  // Shift the start marker past the opening paren. The closing paren will be used to stop parsing, and will be stripped out later.
 
   char** retv = malloc(sizeof(char*) * (tokencount + 1));
   memset(retv, 0, sizeof(char*) * (tokencount + 1));
-  //char tokv[tokencount][tokenlen];
   char tokbuffer[tokenlen + 1];
   char buffer[bufferlen];
   char delim[2] = ":";
@@ -87,27 +105,13 @@ char** parse(char* raw) {
   if(span > 1) {
     int i = 1;
     strncpy(buffer, arg_start, span);
-    /*
-    if(strcmp(buffer, "card") == 0) {
-      // ***bookmark***
-      start = start[span + 1];
-      if((span = strspan(start, ')') == -1)
-        return NULL;
-      strncpy(buffer, start, span - 1);
-      if((
-    } // else if(strcmp( other keywords ) == 0)
-    */
     arg_start = strtok(buffer, delim);
     strncpy(tokbuffer, arg_start, tokenlen - 1);
     retv[i] = malloc(sizeof(char) * strlen(tokbuffer) + 1);
     strcpy(retv[i], tokbuffer);
-    if((start = strchr(retv[i], ')')) != NULL)
-    {
+    if((start = strchr(retv[i], ')')) != NULL) {  // If the parameter string ends after the first token, stop parsing here.
       *start = '\0';
-    }
-    else
-    {
-      // Then capture any subparameters until the end of the parameter list is reached
+    } else {  // Otherwise, start capturing subparameters until the closing paren is found, or the limit of 10 is reached.
       i++;
       strcpy(delim,",");
       while(i < tokencount && (arg_start = strtok(NULL, delim)) != NULL) {
@@ -115,32 +119,23 @@ char** parse(char* raw) {
         tokbuffer[tokenlen] = '\0';
         retv[i] = malloc(strlen(tokbuffer) + 1);
         strcpy(retv[i], tokbuffer);
-        if((start = strchr(retv[i], ')')) != NULL)
-        {
+        if((start = strchr(retv[i], ')')) != NULL) {
           *start = '\0';
         }
         i++;
       }
     }
-    /*
-    while(i > 1) {
-      i--;
-      retv[i] = malloc(strlen(tokv[i]) + 1);
-      strncpy(retv[i], tokv[i], tokenlen);
-      retv[i][strlen(tokv[i])] = '\0';
-    }
-    */
   }
 
   return retv;
 }
 
 void process_queries(params* modes, char** tokv) {
-  // BEGIN DEBUG
   char* output = malloc(512);
   int len = 0;
   int i;
 
+  // BEGIN DEBUG
   len = snprintf(output, 510, "PRIVMSG #mtg_test :Read command \'%s\', with the following parameter and subparameters:", tokv[0]);
   for(i = 1; len < 510 && tokv[i] != NULL; i++) {
     len += snprintf(&output[len], 510 - len, " %s", tokv[i]);
