@@ -11,7 +11,7 @@ typedef struct {
   struct node* next;
 } node;
 
-int write_remote( int socket_fd, char* message, size_t message_length );
-void establish_irc_session( params* modes );
-int build_connection( char* ip_addr, int port );
+int write_remote(int socket_fd, char* message, size_t message_length);
+void establish_irc_session(params* modes);
+int build_connection(char* ip_addr, int port);
 void terminate_irc_session(int socket_fd);

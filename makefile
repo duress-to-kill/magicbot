@@ -4,7 +4,7 @@ static_libs := -L. $(static_lib_list)
 debug := -Wall -g
 
 all:
-	gcc $(debug) $(static_libs) socket.c magicbot.c json_manager.c $(static_lib_list) -o json_manager
+	gcc $(debug) $(static_libs) socket.c magicbot.c json_manager.c $(static_lib_list) -o oracle
 
 oracle:
 	gcc $(debug) socket.c magicbot.c $(lib_dependencies) -o oracle

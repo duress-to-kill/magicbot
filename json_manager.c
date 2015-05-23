@@ -17,14 +17,14 @@ static jsmntok_t *tok = NULL;
 static size_t toklen = 1000000;
 static jsmnerr_t obj_count = 0;
 
-static int parse_raw(const char* raw, const char *src_filename) {
+static int parse_raw(const char* raw_in, const char *src_filename) {
     jsmn_init(&pos);
   do {
     if ((tok = realloc(tok, toklen * sizeof(jsmntok_t))) == NULL) {
       fprintf(stderr, "Error: failed to allocate %ld indexes (%ld bytes) for json parsing: realloc(): %s\n", (long)toklen, (long)toklen * (long)sizeof(jsmntok_t), strerror(errno));
       return 1;
     }
-    if((obj_count = jsmn_parse(&pos, raw, rawlen, tok, toklen)) == JSMN_ERROR_NOMEM) {
+    if((obj_count = jsmn_parse(&pos, raw_in, rawlen, tok, toklen)) == JSMN_ERROR_NOMEM) {
       printf("%ld was not enough bytes, adding more...\n", (long)toklen);
       toklen += 25000;
     } else if (obj_count == JSMN_ERROR_INVAL) {
@@ -74,8 +74,7 @@ int load_cards_from_file(const char *src_filename) {
   return 0;
 }
 
-static unsigned int hash(const char *key, int len)
-{
+static unsigned int hash(const char *key, int len) {
   // The apparently well-known ELF hash
   // cut and paste courtesy of http://www.eternallyconfuzzled.com/tuts/algorithms/jsw_tut_hashing.aspx
 
@@ -109,7 +108,7 @@ static int insert_card(const jsmntok_t *card_obj) {
     fprintf(stderr, "Error: found malformed card object at byte offset %ld during indexing\n", (long)card_obj - (long)tok);
     return 1;
   }
-  start += 8;
+  start += 8; // this corresponds to strlen(\"name\":\"")
   char buffer[50];
   strncpy(buffer, start, 49);
   int len = strspan(buffer, '\"');
@@ -141,6 +140,11 @@ static int update_table() {
 }
 
 void init_table() {
+  memset(table, 0, tablesize);
+  return;
+}
+
+void purge_table() {
   int i;
   card *current, *prev;;
   for (i = 0; i < tablesize; i++) {
@@ -148,11 +152,13 @@ void init_table() {
       current = table[i];
       while(current != NULL) {
         prev = current;
+        current = current->next;
         free(prev);
       }
-      table[i] = NULL;
     }
   }
+  init_table();
+  return;
 }
 
 /* TEST FRAMEWORK BELOW THIS POINT */

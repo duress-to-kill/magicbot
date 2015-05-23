@@ -81,7 +81,7 @@ char* read_remote(FILE* stream) {
 }
 
 
-int write_remote( int socket_fd, char* message, size_t message_length ) {
+int write_remote(int socket_fd, char* message, size_t message_length) {
   // DEV: write not more than maximum IRC line size to remote host. Then sleep to maintain
   // flood control before returning.
   // EDIT: Allow writing of arbitrary amounts of text, in line-size chunks, with rate-limiting.
@@ -98,7 +98,7 @@ int write_remote( int socket_fd, char* message, size_t message_length ) {
 
 // A management function called form main() that handles building a network connection, identifying to
 // nickserv, and all other connection-related functionality.
-void establish_irc_session( params* modes ) {
+void establish_irc_session(params* modes) {
   // Open a network socket and reord the coresponding file descriptor.
   modes->socket_fd = build_connection( modes->ip_addr, modes->port );
   modes->socket_file = fdopen(modes->socket_fd, "w+");
