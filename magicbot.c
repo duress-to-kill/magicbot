@@ -2,29 +2,6 @@
 #include "magicbot.h"
 
 // Begin main function
-int main(int argc, char** argv) {
-  params* modes = get_modes( argc, argv );
-
-  establish_irc_session(modes);
-  char* line;
-  char** tokv;
-  while (1) {
-    line = read_remote(modes->socket_file);
-    tokv = parse(line);
-    free(line);
-    if (tokv != NULL) {
-      process_queries(modes, tokv);
-      int i;
-      for(i = 0; tokv[i] != NULL; i++) {
-        free(tokv[i]);
-      }
-      free(tokv);
-    }
-  }
-  terminate_irc_session(modes->socket_fd);
-
-  free(modes);
-}
 
 // Begin parsing operational modes from input parameters
 params* get_modes(int argc, char** argv) {
@@ -147,10 +124,3 @@ void process_queries(params* modes, char** tokv) {
   // END DEBUG
 }
 
-int strspan(char* span_start, char span_terminator) {
-  char* span_end = strchr(span_start, span_terminator);
-  if(span_end == NULL)
-    return -1;
-  int span = (uintptr_t)span_end - (uintptr_t)span_start;
-  return span;
-}
