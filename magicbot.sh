@@ -41,7 +41,7 @@ echo "http://magiccards.info/query?q=`echo -n $CARDNAME | sed 's: :+:g' | sed "s
 
 
         # Chop off heads and tails and ensure we're only working with the html for the proper target card, to eliminate multiple matches and false positives.
-        MTGI_RAW_SUB=$(echo $MTGI_RAW | sed "s:^.*>$CARDNAME_CAP</a>.<img::" | sed 's:</table>.*$::')
+        MTGI_RAW_SUB=$(echo $MTGI_RAW | sed "s:^.*>$CARDNAME_CAP\( ([^)]*)\)\?</a>.<img::" | sed 's:</table>.*$::')
 
 echo "$MTGI_RAW_SUB"
 
